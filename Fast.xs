@@ -347,11 +347,6 @@ void uri_scan_auth(uri_t* uri, const char* auth, const size_t len) {
   size_t i;
   unsigned char flag;
 
-  memset(&uri->usr,  '\0', sizeof(uri_usr_t));
-  memset(&uri->pwd,  '\0', sizeof(uri_pwd_t));
-  memset(&uri->host, '\0', sizeof(uri_host_t));
-  memset(&uri->port, '\0', sizeof(uri_port_t));
-
   if (len > 0) {
     // Credentials
     brk1 = minnum(len - idx, strcspn(&auth[idx], "@"));
@@ -435,6 +430,8 @@ void uri_scan(uri_t *uri, const char *src, size_t len) {
   size_t idx = 0;
   size_t brk;
   size_t i;
+
+  memset(uri, '\0', sizeof(*uri));
 
   // Skip any leading whitespace
   brk = minnum(len - idx, strspn(&src[idx], " \r\n\t\f"));
@@ -979,7 +976,6 @@ SV* new(pTHX_ const char* class, SV* uri_str) {
   SV*    obj_ref;
 
   Newx(uri, 1, uri_t);
-  memset(uri, '\0', sizeof(uri_t));
 
   obj = newSViv((IV) uri);
   obj_ref = newRV_noinc(obj);
