@@ -3,6 +3,7 @@
 #include "perl.h"
 #include "XSUB.h"
 #include "ppport.h"
+#include "strnspn.c"
 #include "query.c"
 
 #ifndef URI
@@ -349,10 +350,10 @@ void uri_scan_auth(uri_t* uri, const char* auth, const size_t len) {
 
   if (len > 0) {
     // Credentials
-    brk1 = minnum(len - idx, strcspn(&auth[idx], "@"));
+    brk1 = strncspn(&auth[idx], len - idx, "@");
 
     if (brk1 > 0 && brk1 != (len - idx)) {
-      brk2 = minnum(len - idx, strcspn(&auth[idx], ":"));
+      brk2 = strncspn(&auth[idx], len - idx, ":");
 
       if (brk2 > 0 && brk2 < brk1) {
         // user
@@ -375,7 +376,7 @@ void uri_scan_auth(uri_t* uri, const char* auth, const size_t len) {
     // Maybe an IPV6 address
     flag = 0;
     if (auth[idx] == '[') {
-      brk1 = minnum(len - idx, strcspn(&auth[idx], "]"));
+      brk1 = strncspn(&auth[idx], len - idx, "]");
 
       if (auth[idx + brk1] == ']') {
         // Copy, including the square brackets
@@ -390,7 +391,7 @@ void uri_scan_auth(uri_t* uri, const char* auth, const size_t len) {
     }
 
     if (flag == 0) {
-      brk1 = minnum(len - idx, strcspn(&auth[idx], ":"));
+      brk1 = strncspn(&auth[idx], len - idx, ":");
 
       if (brk1 > 0 && brk1 != (len - idx)) {
         strncpy(uri->host, &auth[idx], minnum(brk1, URI_SIZE_host));
@@ -434,7 +435,7 @@ void uri_scan(uri_t *uri, const char *src, size_t len) {
   memset(uri, '\0', sizeof(*uri));
 
   // Skip any leading whitespace
-  brk = minnum(len - idx, strspn(&src[idx], " \r\n\t\f"));
+  brk = strnspn(&src[idx], len - idx, " \r\n\t\f");
   idx += brk;
 
   for (i = len - 1; i > 0; --i) {
@@ -446,13 +447,13 @@ void uri_scan(uri_t *uri, const char *src, size_t len) {
   }
 
   // Scheme
-  brk = minnum(len - idx, strcspn(&src[idx], ":/@?#"));
+  brk = strncspn(&src[idx], len - idx, ":/@?#");
   if (brk > 0 && strncmp(&src[idx + brk], "://", 3) == 0) {
     strncpy(uri->scheme, &src[idx], minnum(brk, URI_SIZE_scheme));
     idx += brk + 3;
 
     // Authority
-    brk = minnum(len - idx, strcspn(&src[idx], "/?#"));
+    brk = strncspn(&src[idx], len - idx, "/?#");
     if (brk > 0) {
       uri_scan_auth(uri, &src[idx], brk);
       idx += brk;
@@ -460,7 +461,7 @@ void uri_scan(uri_t *uri, const char *src, size_t len) {
   }
 
   // path
-  brk = minnum(len - idx, strcspn(&src[idx], "?#"));
+  brk = strncspn(&src[idx], len - idx, "?#");
   if (brk > 0) {
     strncpy(uri->path, &src[idx], minnum(brk, URI_SIZE_path));
     idx += brk;
@@ -469,7 +470,7 @@ void uri_scan(uri_t *uri, const char *src, size_t len) {
   // query
   if (src[idx] == '?') {
     ++idx; // skip past ?
-    brk = minnum(len - idx, strcspn(&src[idx], "#"));
+    brk = strncspn(&src[idx], len - idx, "#");
     if (brk > 0) {
       strncpy(uri->query, &src[idx], minnum(brk, URI_SIZE_query));
       idx += brk;
